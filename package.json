@@ -1,0 +1,27 @@
+{
+  "name": "playwright-form-builder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + TypeScript E2E suite for the Laravel Form Builder module (QA Automation assessment)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:builder": "playwright test tests/builder",
+    "test:public": "playwright test tests/public-form tests/submission",
+    "test:access": "playwright test tests/access-control",
+    "test:known-defects": "playwright test --grep @known-defect",
+    "test:no-known-defects": "playwright test --grep-invert @known-defect",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.49.1",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.11.0"
+  }
+}

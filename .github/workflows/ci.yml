@@ -1,0 +1,144 @@
+name: E2E (Playwright)
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: demo
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      BASE_URL: http://127.0.0.1:8000
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: demo
+      DB_USERNAME: root
+      DB_PASSWORD: root
+
+    steps:
+      - name: Checkout test suite
+        uses: actions/checkout@v4
+
+      # The Laravel app under test. Commit it at ./app, or set APP_REPO (and
+      # APP_REF) repository variables to clone it. See README > CI/CD.
+      - name: Checkout app under test (external repo)
+        if: ${{ vars.APP_REPO != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.APP_REPO }}
+          ref: ${{ vars.APP_REF || '' }}
+          path: app
+          token: ${{ secrets.APP_REPO_TOKEN || github.token }}
+
+      - name: Assert app source is present
+        run: |
+          test -f app/artisan || { echo "::error::Laravel app not found at ./app. Commit it there or set the APP_REPO repo variable."; exit 1; }
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_mysql, bcmath, curl, xml, zip
+          coverage: none
+
+      - name: Install Composer dependencies
+        working-directory: app
+        # composer.lock is committed, so versions are pinned. --ignore-platform-reqs
+        # guards against old dev-only deps (e.g. facade/ignition) tripping the PHP 8.2
+        # platform check; runtime deps still resolve from the lock.
+        run: composer install --no-interaction --prefer-dist --no-progress --ignore-platform-reqs
+
+      - name: Configure Laravel
+        working-directory: app
+        run: |
+          cp .env.example .env || true
+          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          php artisan key:generate --force
+          sed -i "s#^APP_URL=.*#APP_URL=http://127.0.0.1:8000#" .env
+          sed -i "s#^APP_DEBUG=.*#APP_DEBUG=true#" .env
+          sed -i "s#^DB_HOST=.*#DB_HOST=127.0.0.1#" .env
+          sed -i "s#^DB_DATABASE=.*#DB_DATABASE=demo#" .env
+          sed -i "s#^DB_USERNAME=.*#DB_USERNAME=root#" .env
+          sed -i "s#^DB_PASSWORD=.*#DB_PASSWORD=root#" .env
+          # Telescope is referenced by a migration but not installed in this build.
+          rm -f database/migrations/*telescope*.php
+
+      - name: Migrate + import demo.sql
+        working-directory: app
+        run: |
+          php artisan migrate --force
+          mysql -h 127.0.0.1 -uroot -proot demo < demo.sql
+
+      - name: Start the app
+        working-directory: app
+        # CI starts the app itself here (PW_START_APP is left unset, so the suite's
+        # config.webServer stays disabled). global-setup.ts still health-checks BASE_URL.
+        run: |
+          nohup php artisan serve --host=127.0.0.1 --port=8000 > ../artisan-serve.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:8000 > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8000 > /dev/null || { echo "::error::app did not start"; cat ../artisan-serve.log; exit 1; }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install suite dependencies
+        run: npm ci
+
+      - name: Type-check the suite
+        run: npx tsc --noEmit
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            results/junit.xml
+          retention-days: 14
+
+      - name: Upload traces / screenshots (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
+
+      - name: Upload artisan log (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artisan-serve-log
+          path: artisan-serve.log
+          retention-days: 7

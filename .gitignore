@@ -1,0 +1,25 @@
+node_modules/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/results/
+/blob-report/
+
+# local env
+.env
+.env.local
+
+# generated evidence (keep curated samples under evidence/samples/)
+/evidence/screenshots/*
+/evidence/traces/*
+!/evidence/**/.gitkeep
+!/evidence/samples/**
+
+# transient local run logs (the curated copies live under evidence/execution/)
+/phase3-*.txt
+/diag*.mjs
+
+# misc
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,14 @@
+Evidence captured 2026-09-01T12:52:03.792Z against http://127.0.0.1:8090
+Non-visual / API-level defect reproductions (see docs/defect-report.md):
+
+DEF-01  email[name=email] required attr on public form: true  (builder setting was required:false)
+DEF-02  POST /submit code="a1" (too short + has digit) -> HTTP 200; rows now 1
+DEF-02  public <input name=code> maxlength=null minlength=null pattern=null
+DEF-03  accessible_using_url=0:  GET /submit -> HTTP 403   POST /submit -> HTTP 200; rows 1
+DEF-04  multi_submission=0, two POST /submit -> rows 2 (expected 1)
+DEF-05  GET /s/slug-a40345 -> HTTP 500
+DEF-06  POST /submit age="abc" -> HTTP 200;  age="999999" -> HTTP 200;  rows 2
+DEF-07  POST /submit colour="purple" (not an option) -> HTTP 200;  rows 1
+DEF-08  POST /submit d="not-a-date" -> HTTP 200;  d="2000-01-01" -> HTTP 200;  rows 2
+DEF-11  field label = <img onerror=...>;  onerror executed on public form: true;  document.title="XSS-FIRED"
+DEF-15  custom redirect_url=/forms;  after submit URL is "http://127.0.0.1:8090/submit/fb-evi-m70ur5" (still /submit — redirect never fired);  page ships the script: true

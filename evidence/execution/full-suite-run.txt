@@ -1,0 +1,83 @@
+﻿
+────────────────────────────────────────────────────────────────
+ Form Builder E2E — pre-flight
+────────────────────────────────────────────────────────────────
+ BASE_URL : http://127.0.0.1:8090
+ DB       : root@127.0.0.1:3306/demo
+ GET /forms (xhr) : HTTP 200
+ DB table form_templates    : 0 row(s)
+ DB table form_submissions  : 0 row(s)
+────────────────────────────────────────────────────────────────
+
+
+Running 49 tests using 2 workers
+
+node.exe : (node:9612) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:9612) War... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15100) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9612) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15100) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 2 [chromium] › access-control\access.spec.ts:10:7 › Public form — access control › TC-33 unknown slug returns 404 (331ms)
+  ok 1 [chromium] › access-control\access.spec.ts:15:7 › Public form — access control › TC-34 GET is 403 when accessible_using_url = 0 (2.7s)
+  ok 3 [chromium] › access-control\access.spec.ts:25:7 › Public form — access control › TC-35 GET is 403 for an archived form (active = 0) (2.6s)
+  ok 4 [chromium] › access-control\access.spec.ts:34:7 › Public form — access control › TC-36 @known-defect unpublished form (is_published = 0) is still viewable AND submittable (DEF-03) (3.4s)
+  ok 5 [chromium] › access-control\access.spec.ts:56:7 › Public form — access control › TC-37 @known-defect POST /submit accepts a submission for a not-accessible form (DEF-03) (4.0s)
+  ok 6 [chromium] › access-control\short-link.spec.ts:12:7 › Short link › TC-38 @known-defect GET /s/{unique_string} returns HTTP 500 (DEF-05) (2.4s)
+  ok 7 [chromium] › builder\create.spec.ts:9:7 › Form Builder — creation › TC-01 create a form through the wizard (happy path) + persists (8.9s)
+  ok 8 [chromium] › builder\create.spec.ts:34:7 › Form Builder — creation › TC-02 blank title blocks step 1 (client) (10.3s)
+  ok 10 [chromium] › builder\create.spec.ts:49:7 › Form Builder — creation › TC-04 server rejects a title with illegal characters (422) (2.8s)
+  ok 11 [chromium] › builder\create.spec.ts:61:7 › Form Builder — creation › TC-05 a form with zero fields is rejected (422) (927ms)
+  ok 9 [chromium] › builder\create.spec.ts:42:7 › Form Builder — creation › TC-03 title is capped at 200 characters (7.0s)
+  ok 12 [chromium] › builder\create.spec.ts:74:7 › Form Builder — creation › TC-06 duplicate slug is rejected (422) (1.6s)
+  ok 13 [chromium] › builder\fields.spec.ts:23:7 › Form Builder — field management › TC-07 add one of every in-scope field type; all land in form_structure (14.0s)
+  ok 14 [chromium] › builder\fields.spec.ts:49:7 › Form Builder — field management › TC-10 duplicate a field inserts a copy directly below it (12.8s)
+  ok 15 [chromium] › builder\fields.spec.ts:74:7 › Form Builder — field management › TC-11 delete a field removes it from the canvas and structure (10.3s)
+  ok 16 [chromium] › builder\fields.spec.ts:98:7 › Form Builder — field management › TC-12 reorder fields with the arrow controls; order persists (11.3s)
+  ok 17 [chromium] › builder\settings-publish.spec.ts:8:7 › Form settings & publish › TC-29 custom success message is configured, persisted and returned on submit (3.1s)
+  ok 18 [chromium] › builder\settings-publish.spec.ts:30:7 › Form settings & publish › TC-30 custom submit button text renders on the public form (9.2s)
+  ok 20 [chromium] › builder\settings-publish.spec.ts:73:7 › Form settings & publish › TC-31 publish via the wizard "Publish now" button sets is_published + isEverPublished (10.5s)
+  ok 19 [chromium] › builder\settings-publish.spec.ts:41:7 › Form settings & publish › TC-39 @known-defect custom redirect is configured server-side but never fires client-side (DEF-15) (24.8s)
+  ok 21 [chromium] › builder\settings-publish.spec.ts:97:7 › Form settings & publish › TC-31b a form published via the wizard appears under the dashboard "Published" filter (16.1s)
+  ok 22 [chromium] › public-form\client-validation.spec.ts:7:7 › Public form — client-side validation › TC-14 a required field blocks submit and shows an inline error (13.0s)
+  ok 23 [chromium] › public-form\client-validation.spec.ts:20:7 › Public form — client-side validation › TC-19 phone must be exactly 10 digits (client) (9.4s)
+  ok 24 [chromium] › public-form\client-validation.spec.ts:32:7 › Public form — client-side validation › TC-19b phone strips non-digit characters as you type (10.7s)
+  ok 25 [chromium] › public-form\client-validation.spec.ts:39:7 › Public form — client-side validation › TC-21 number outside the configured range shows an inline error (client) (11.5s)
+  ok 26 [chromium] › public-form\client-validation.spec.ts:51:7 › Public form — client-side validation › TC-25 required checkbox group, nothing selected -> inline error, submit blocked (11.3s)
+  ok 28 [chromium] › public-form\conditional.spec.ts:9:7 › Public form — conditional logic › TC-26 conditional field hides by default, appears on match, toggles required (11.5s)
+  ok 27 [chromium] › public-form\client-validation.spec.ts:64:7 › Public form — client-side validation › TC-23 @known-defect text min/max chars are not enforced on the public form (DEF-02) (19.5s)
+  ok 30 [chromium] › public-form\render.spec.ts:7:7 › Public form — rendering › TC-08 field label from the builder renders on the public form (11.8s)
+  ok 29 [chromium] › public-form\conditional.spec.ts:27:7 › Public form — conditional logic › TC-26b submitting with the condition unmet does not require the hidden field (18.8s)
+  ok 31 [chromium] › public-form\render.spec.ts:18:7 › Public form — rendering › TC-09 a required text field renders with the required attribute + star (10.6s)
+  ok 32 [chromium] › public-form\render.spec.ts:33:7 › Public form — rendering › TC-07b all in-scope field types render with the expected control (11.3s)
+  ok 33 [chromium] › public-form\render.spec.ts:47:7 › Public form — rendering › TC-18 @known-defect an OPTIONAL email field is rendered as required (DEF-01) (9.5s)
+  ok 34 [chromium] › public-form\render.spec.ts:65:7 › Public form — rendering › TC-40 @known-defect an <img onerror> payload in a field label executes on the public form (DEF-11) (10.9s)
+  ok 36 [chromium] › submission\multi-submission.spec.ts:6:7 › Multiple submission setting › TC-27 multi_submission = 1 allows repeat submissions (6.8s)
+  ok 35 [chromium] › publish\dashboard.spec.ts:12:7 › Dashboard — publish toggle & filters › TC-32 toggling the dashboard publish switch flips is_published; isEverPublished latches (13.9s)
+  ok 37 [chromium] › submission\multi-submission.spec.ts:20:7 › Multiple submission setting › TC-28 @known-defect multi_submission = 0 is NOT enforced server-side (DEF-04) (4.1s)
+  ok 38 [chromium] › publish\dashboard.spec.ts:36:7 › Dashboard — publish toggle & filters › TC-32b a form is re-categorised between the Draft and Published filters when toggled (16.1s)
+  ok 39 [chromium] › submission\multi-submission.spec.ts:42:7 › Multiple submission setting › TC-27b multi_submission = 0 hides the form on reload after first submit (UI gate) (14.6s)
+  ok 40 [chromium] › submission\server-validation.spec.ts:18:7 › Submission — server-side validation › TC-17 invalid email is rejected (422) (1.9s)
+  ok 41 [chromium] › submission\server-validation.spec.ts:33:7 › Submission — server-side validation › TC-25 required checkbox group missing is rejected (422) (3.2s)
+  ok 42 [chromium] › submission\server-validation.spec.ts:43:7 › Submission — server-side validation › TC-20 @known-defect phone accepts non-10-digit / non-numeric values (DEF-06) (3.3s)
+  ok 44 [chromium] › submission\server-validation.spec.ts:87:7 › Submission — server-side validation › TC-24 @known-defect select accepts a value outside the configured options (DEF-07) (3.2s)
+  ok 43 [chromium] › submission\server-validation.spec.ts:68:7 › Submission — server-side validation › TC-22 @known-defect number field accepts out-of-range & non-numeric (DEF-06) (4.1s)
+  ok 45 [chromium] › submission\server-validation.spec.ts:104:7 › Submission — server-side validation › TC-08b @known-defect date field has no server-side date / range validation (DEF-08) (3.9s)
+  ok 46 [chromium] › submission\server-validation.spec.ts:126:7 › Submission — server-side validation › TC-23 @known-defect text min/max length & letters-only are not enforced (DEF-02) (4.5s)
+  ok 47 [chromium] › submission\submit-persist.spec.ts:9:7 › Submission — positive & persistence › TC-15 valid submission persists exact data to form_submissions (18.3s)
+  ok 48 [chromium] › submission\submit-persist.spec.ts:43:7 › Submission — positive & persistence › TC-16 checkbox values persist as a JSON array (20.0s)
+  ok 49 [chromium] › submission\submit-persist.spec.ts:65:7 › Submission — positive & persistence › TC-14b client-blocked submit creates no row (8.0s)
+
+  Slow test file: [chromium] › public-form\conditional.spec.ts (30.3s)
+  Slow test file: [chromium] › publish\dashboard.spec.ts (29.9s)
+  Slow test file: [chromium] › submission\multi-submission.spec.ts (25.6s)
+  Consider splitting slow test files to speed up parallel execution
+  49 passed (3.8m)
