@@ -19,6 +19,19 @@ node_modules/
 /phase3-*.txt
 /diag*.mjs
 
+# bundled Laravel app under test (./app) — commit source only, not build/runtime state
+/app/vendor/
+/app/node_modules/
+/app/.env
+/app/.env.backup
+/app/storage/framework/cache/*
+/app/storage/framework/sessions/*
+/app/storage/framework/views/*
+/app/storage/logs/*
+/app/bootstrap/cache/*
+!/app/**/.gitignore
+!/app/**/.gitkeep
+
 # misc
 *.log
 .DS_Store
