@@ -42,6 +42,7 @@ const docs = [
   ['docs/coverage-matrix.md', '02-Documentation/Coverage-Matrix.pdf'],
   ['docs/execution-summary.md', '02-Documentation/Execution-Summary.pdf'],
   ['PROGRESS.md', '04-Supporting/PROGRESS.pdf'],
+  ['docs/self-review.md', '04-Supporting/Self-Review.pdf'],
 ];
 
 const browser = await chromium.launch();
