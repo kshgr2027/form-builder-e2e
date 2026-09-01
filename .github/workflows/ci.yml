@@ -20,10 +20,10 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -proot"
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=10
+          --health-retries=15
 
     env:
       BASE_URL: http://127.0.0.1:8000
@@ -37,8 +37,8 @@ jobs:
       - name: Checkout test suite
         uses: actions/checkout@v4
 
-      # The Laravel app under test. Commit it at ./app, or set APP_REPO (and
-      # APP_REF) repository variables to clone it. See README > CI/CD.
+      # The Laravel app under test lives at ./app in this repo (source only).
+      # Alternatively set repo variable APP_REPO (+ APP_REF, secret APP_REPO_TOKEN).
       - name: Checkout app under test (external repo)
         if: ${{ vars.APP_REPO != '' }}
         uses: actions/checkout@v4
@@ -48,61 +48,116 @@ jobs:
           path: app
           token: ${{ secrets.APP_REPO_TOKEN || github.token }}
 
-      - name: Assert app source is present + create runtime dirs
+      - name: Prepare app (assert source + runtime dirs + drop uninstalled Telescope config)
         run: |
-          test -f app/artisan || { echo "::error::Laravel app not found at ./app. Commit it there or set the APP_REPO repo variable."; exit 1; }
-          # Laravel's own .gitignore keeps storage/ + bootstrap/cache empty in git; recreate the skeleton.
-          mkdir -p app/storage/framework/cache/data app/storage/framework/sessions app/storage/framework/views \
-                   app/storage/logs app/storage/app/public app/bootstrap/cache
+          set -euxo pipefail
+          test -f app/artisan || { echo "::error::Laravel app not found at ./app."; exit 1; }
+          mkdir -p app/storage/framework/cache/data \
+                   app/storage/framework/sessions \
+                   app/storage/framework/views \
+                   app/storage/logs \
+                   app/storage/app/public \
+                   app/bootstrap/cache
+          # laravel/telescope is not a dependency of this cut-down app; its config + migration must go.
+          rm -f app/config/telescope.php
+          rm -f app/database/migrations/*telescope*.php
+          ls -la app
 
-      - name: Setup PHP
+      - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, pdo_mysql, bcmath, curl, xml, zip
+          extensions: >-
+            bcmath, ctype, curl, dom, fileinfo, filter, gd, iconv, intl, json,
+            mbstring, openssl, pcre, pdo, pdo_mysql, phar, session, simplexml,
+            sockets, tokenizer, xml, xmlwriter, zip
+          tools: composer:v2
           coverage: none
 
-      - name: Install Composer dependencies
-        working-directory: app
-        # composer.lock is committed, so versions are pinned. --ignore-platform-reqs
-        # guards against old dev-only deps (e.g. facade/ignition) tripping the PHP 8.2
-        # platform check; runtime deps still resolve from the lock.
-        run: composer install --no-interaction --prefer-dist --no-progress --ignore-platform-reqs
+      - name: Show PHP + extensions
+        run: |
+          php -v
+          php -m
 
-      - name: Configure Laravel
+      - name: Composer install (no scripts)
+        working-directory: app
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts --ignore-platform-reqs
+
+      - name: Dump autoloader + discover packages
         working-directory: app
         run: |
-          cp .env.example .env || true
-          php -r "file_exists('.env') || copy('.env.example', '.env');"
+          set -euxo pipefail
+          composer dump-autoload --no-interaction --optimize
+          php artisan package:discover --ansi
+
+      - name: Configure .env
+        working-directory: app
+        run: |
+          set -euxo pipefail
+          cp -f .env.example .env
           php artisan key:generate --force
-          sed -i "s#^APP_URL=.*#APP_URL=http://127.0.0.1:8000#" .env
-          sed -i "s#^APP_DEBUG=.*#APP_DEBUG=true#" .env
-          sed -i "s#^DB_HOST=.*#DB_HOST=127.0.0.1#" .env
-          sed -i "s#^DB_DATABASE=.*#DB_DATABASE=demo#" .env
-          sed -i "s#^DB_USERNAME=.*#DB_USERNAME=root#" .env
-          sed -i "s#^DB_PASSWORD=.*#DB_PASSWORD=root#" .env
-          # Telescope is referenced by a migration but not installed in this build.
-          rm -f database/migrations/*telescope*.php
+          php -r '
+            $f=".env"; $s=file_get_contents($f);
+            $set=function($k,$v)use(&$s){
+              $s = preg_match("/^$k=.*$/m",$s) ? preg_replace("/^$k=.*$/m","$k=$v",$s) : $s."\n$k=$v";
+            };
+            $set("APP_URL","http://127.0.0.1:8000");
+            $set("APP_DEBUG","true");
+            $set("DB_CONNECTION","mysql");
+            $set("DB_HOST","127.0.0.1");
+            $set("DB_PORT","3306");
+            $set("DB_DATABASE","demo");
+            $set("DB_USERNAME","root");
+            $set("DB_PASSWORD","root");
+            $set("CACHE_DRIVER","file");
+            $set("SESSION_DRIVER","file");
+            $set("QUEUE_CONNECTION","sync");
+            $set("BROADCAST_DRIVER","log");
+            $set("MAIL_MAILER","array");
+            file_put_contents($f,$s);
+          '
+          grep -E "^(APP_URL|APP_DEBUG|DB_|CACHE_DRIVER|SESSION_DRIVER|BROADCAST_DRIVER)=" .env
 
-      - name: Migrate + import demo.sql
+      - name: Boot check
         working-directory: app
         run: |
-          php artisan migrate --force
+          set -euxo pipefail
+          php artisan --version
+          php artisan route:list --json | head -c 400 || true
+          php artisan config:clear
+
+      - name: Wait for MySQL
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h 127.0.0.1 -uroot -proot --silent && break
+            echo "waiting for mysql ($i)"; sleep 2
+          done
+          mysqladmin ping -h 127.0.0.1 -uroot -proot
+
+      - name: Migrate
+        working-directory: app
+        run: php artisan migrate --force -vvv
+
+      - name: Import demo.sql
+        working-directory: app
+        run: |
+          set -euxo pipefail
           mysql -h 127.0.0.1 -uroot -proot demo < demo.sql
+          mysql -h 127.0.0.1 -uroot -proot demo -e "SHOW TABLES;"
 
       - name: Start the app
         working-directory: app
-        # CI starts the app itself here (PW_START_APP is left unset, so the suite's
-        # config.webServer stays disabled). global-setup.ts still health-checks BASE_URL.
         run: |
-          nohup php artisan serve --host=127.0.0.1 --port=8000 > ../artisan-serve.log 2>&1 &
+          set -euxo pipefail
+          nohup php artisan serve --host=127.0.0.1 --port=8000 > "$GITHUB_WORKSPACE/artisan-serve.log" 2>&1 &
           for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:8000 > /dev/null && break
+            curl -sf http://127.0.0.1:8000 > /dev/null && { echo "app up after ${i}s"; break; }
             sleep 1
           done
-          curl -sf http://127.0.0.1:8000 > /dev/null || { echo "::error::app did not start"; cat ../artisan-serve.log; exit 1; }
+          curl -sf http://127.0.0.1:8000 > /dev/null || { echo "::error::app did not start"; cat "$GITHUB_WORKSPACE/artisan-serve.log"; exit 1; }
+          curl -s -o /dev/null -w "GET /forms -> %{http_code}\n" http://127.0.0.1:8000/forms
 
-      - name: Setup Node
+      - name: Setup Node 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -114,13 +169,13 @@ jobs:
       - name: Type-check the suite
         run: npx tsc --noEmit
 
-      - name: Install Playwright browsers
+      - name: Install Playwright (Chromium)
         run: npx playwright install --with-deps chromium
 
       - name: Run E2E tests
         run: npx playwright test
 
-      - name: Upload Playwright report
+      - name: Upload Playwright report + JUnit
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
@@ -129,6 +184,7 @@ jobs:
             playwright-report/
             results/junit.xml
           retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload traces / screenshots (on failure)
         if: failure()
@@ -137,6 +193,7 @@ jobs:
           name: test-results
           path: test-results/
           retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload artisan log (on failure)
         if: failure()
@@ -145,3 +202,4 @@ jobs:
           name: artisan-serve-log
           path: artisan-serve.log
           retention-days: 7
+          if-no-files-found: ignore
