@@ -67,10 +67,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: >-
-            bcmath, ctype, curl, dom, fileinfo, filter, gd, iconv, intl, json,
-            mbstring, openssl, pcre, pdo, pdo_mysql, phar, session, simplexml,
-            sockets, tokenizer, xml, xmlwriter, zip
+          # only genuinely-optional extensions; PHP core already provides
+          # pcre/pdo/phar/session/filter/json/openssl/ctype/tokenizer/simplexml/dom.
+          extensions: mbstring, curl, xml, pdo_mysql, bcmath, zip, gd, intl, fileinfo
           tools: composer:v2
           coverage: none
 
@@ -83,24 +82,20 @@ jobs:
         working-directory: app
         run: composer install --no-interaction --prefer-dist --no-progress --no-scripts --ignore-platform-reqs
 
-      - name: Dump autoloader + discover packages
-        working-directory: app
-        run: |
-          set -euxo pipefail
-          composer dump-autoload --no-interaction --optimize
-          php artisan package:discover --ansi
-
+      # .env MUST exist before anything boots the framework: AppServiceProvider::boot()
+      # runs URL::forceScheme() when APP_ENV=production, and that line has no `use` import
+      # (latent app bug) — so a missing .env => APP_ENV defaults to production => fatal.
       - name: Configure .env
         working-directory: app
         run: |
           set -euxo pipefail
           cp -f .env.example .env
-          php artisan key:generate --force
           php -r '
             $f=".env"; $s=file_get_contents($f);
             $set=function($k,$v)use(&$s){
               $s = preg_match("/^$k=.*$/m",$s) ? preg_replace("/^$k=.*$/m","$k=$v",$s) : $s."\n$k=$v";
             };
+            $set("APP_ENV","local");
             $set("APP_URL","http://127.0.0.1:8000");
             $set("APP_DEBUG","true");
             $set("DB_CONNECTION","mysql");
@@ -116,7 +111,15 @@ jobs:
             $set("MAIL_MAILER","array");
             file_put_contents($f,$s);
           '
-          grep -E "^(APP_URL|APP_DEBUG|DB_|CACHE_DRIVER|SESSION_DRIVER|BROADCAST_DRIVER)=" .env
+          php artisan key:generate --force
+          grep -E "^(APP_ENV|APP_URL|APP_DEBUG|DB_|CACHE_DRIVER|SESSION_DRIVER|BROADCAST_DRIVER)=" .env
+
+      - name: Dump autoloader + discover packages
+        working-directory: app
+        run: |
+          set -euxo pipefail
+          composer dump-autoload --no-interaction --optimize
+          php artisan package:discover --ansi
 
       - name: Boot check
         working-directory: app
