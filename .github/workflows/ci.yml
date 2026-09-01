@@ -48,9 +48,12 @@ jobs:
           path: app
           token: ${{ secrets.APP_REPO_TOKEN || github.token }}
 
-      - name: Assert app source is present
+      - name: Assert app source is present + create runtime dirs
         run: |
           test -f app/artisan || { echo "::error::Laravel app not found at ./app. Commit it there or set the APP_REPO repo variable."; exit 1; }
+          # Laravel's own .gitignore keeps storage/ + bootstrap/cache empty in git; recreate the skeleton.
+          mkdir -p app/storage/framework/cache/data app/storage/framework/sessions app/storage/framework/views \
+                   app/storage/logs app/storage/app/public app/bootstrap/cache
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
