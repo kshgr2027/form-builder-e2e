@@ -20,7 +20,7 @@ documentation lives in [`README.md`](README.md) and [`docs/`](docs/).
 | **Live test execution** | ✅ **Done 2026-09-01** — local stack stood up (PHP 8.2 / MySQL 26.7 / Composer / Git via scoop). Run 1: **49/49 pass** (2 workers, 3.8 min). `--repeat-each=2`: **98/98 pass** (no flakes). See `docs/execution-summary.md`. |
 | Defect runtime verification | ✅ DEF-01…08, 11 reproduced by passing `@known-defect` tests. **DEF-15 discovered at runtime.** DEF-09/10 observed. `docs/defect-report.md` updated. |
 | README / defect report / test-case doc / coverage matrix / execution summary | ✅ Updated with runtime results |
-| CI/CD | ✅ `.github/workflows/ci.yml` — app bundled at `./app` so it's self-contained. Triggered on push; run at github.com/kshgr2027/form-builder-e2e/actions. |
+| CI/CD | ✅ `.github/workflows/ci.yml` — app bundled at `./app` so it's self-contained. **Green on a clean runner:** [run #6](https://github.com/kshgr2027/form-builder-e2e/actions/runs/33515146355) (commit `0fb06ca`) — composer install → migrate → import `demo.sql` → `php artisan serve` → `npx playwright test`, all steps pass. |
 | Evidence capture | ✅ `evidence/defects/` (5 screenshots + API-repro log) + `evidence/execution/` (run logs) |
 | Git repo | ✅ Pushed → **https://github.com/kshgr2027/form-builder-e2e** (`main`) |
 | Drive package | ✅ `../Senior-QA-Automation-Assessment/` built (6 doc PDFs + evidence + link file) — upload pending |

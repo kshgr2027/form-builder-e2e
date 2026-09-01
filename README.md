@@ -187,6 +187,9 @@ double-JSON-encoded). See `docs/defect-report.md` for the full A/B/C classificat
 7. `npx playwright test`
 8. Upload `playwright-report/` always; `test-results/` + artisan log on failure
 
+Latest green run: <https://github.com/kshgr2027/form-builder-e2e/actions/runs/33515146355>
+(commit `0fb06ca`) — full pipeline, app boot to `npx playwright test`, on a clean Ubuntu runner.
+
 **Providing the app to CI:** the Laravel app under test **is bundled in this repo at `./app`**
 (source only — `vendor/`, `.env` and `storage/*` runtime state are git-ignored and rebuilt in CI).
 The workflow is therefore self-contained: clone, push, and it runs. (Alternative: set repo variable
