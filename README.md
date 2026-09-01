@@ -187,10 +187,11 @@ double-JSON-encoded). See `docs/defect-report.md` for the full A/B/C classificat
 7. `npx playwright test`
 8. Upload `playwright-report/` always; `test-results/` + artisan log on failure
 
-**Providing the app to CI** — pick one:
-
-- Commit the Laravel app at `./app` in this repo (simplest, self-contained), **or**
-- Set repo variable `APP_REPO` (`owner/repo`), optionally `APP_REF`, and secret `APP_REPO_TOKEN` if private.
+**Providing the app to CI:** the Laravel app under test **is bundled in this repo at `./app`**
+(source only — `vendor/`, `.env` and `storage/*` runtime state are git-ignored and rebuilt in CI).
+The workflow is therefore self-contained: clone, push, and it runs. (Alternative: set repo variable
+`APP_REPO` (`owner/repo`) + optional `APP_REF` + secret `APP_REPO_TOKEN` to pull the app from
+elsewhere instead.)
 
 ## 13. Assumptions
 
